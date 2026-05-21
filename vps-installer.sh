@@ -10,52 +10,156 @@ ASSUME_YES=false
 WANTED_OS=""
 INSTALL_DOCKER=false
 INSTALL_COMPOSE=false
-full_panel() {
-  # Combined OS selection then actions in one flow (opened by default)
-  PS3="Choose OS (or 0 to exit): "
-  os_options=("Auto-detect" "Ubuntu 22.04" "Ubuntu 20.04" "Debian" "CentOS/RHEL" "AlmaLinux/Rocky" "Fedora" "Alpine" "Arch" "Exit")
-  select o in "${os_options[@]}"; do
-    case $REPLY in
-      1) detect_distro; echo "Detected: $DISTRO_NAME $DISTRO_VER ($DISTRO_ID)"; break ;;
-      2) DISTRO_ID=ubuntu; DISTRO_VER=22.04; break ;;
-      3) DISTRO_ID=ubuntu; DISTRO_VER=20.04; break ;;
-      4) DISTRO_ID=debian; break ;;
-      5) DISTRO_ID=centos; break ;;
-      6) DISTRO_ID=centos; break ;;
-      7) DISTRO_ID=fedora; break ;;
-      8) DISTRO_ID=alpine; break ;;
-      9) DISTRO_ID=arch; break ;;
-      10|0) echo "Exiting"; return 0 ;;
-      *) echo "Invalid" ;;
-    esac
-  done
+DRY_RUN=false
 
-  PS3="Choose action (or 0 to exit): "
-  actions=("Install base" "Install LEMP" "Install LAMP" "Apply SSH hardening" "Create sudo user" "Install Docker" "Install Docker Compose" "Install Netdata" "Configure unattended-upgrades" "Run full recommended setup" "Exit")
-  select a in "${actions[@]}"; do
-    case $REPLY in
-      1) generic_install; break ;;
-      2) install_lemp; break ;;
-      3) install_lamp; break ;;
-      4) apply_ssh_hardening; break ;;
-      5) create_sudo_user; break ;;
-      6) install_docker; break ;;
-      7) install_docker_compose; break ;;
-      8) install_netdata; break ;;
-      9) configure_unattended_upgrades; break ;;
-      10)
-        install_common; install_swap; install_firewall; install_fail2ban; $INSTALL_DOCKER && install_docker; $INSTALL_COMPOSE && install_docker_compose
-        break ;;
-      11|0) echo "Exiting"; return 0 ;;
-      *) echo "Invalid" ;;
+usage() {
+  cat <<EOF
+Usage: $SCRIPT_NAME [options]
+
+Options:
+  --auto                Auto-detect distro and run default setup
+  --os <name[:ver]>     Target OS (ubuntu:22.04, debian, centos, alpine, arch)
+  --non-interactive     Run without prompts (use with --yes to accept defaults)
+  --yes                 Implicit yes to prompts
+  --docker              Install Docker
+  --compose             Install Docker Compose
+  -h, --help            Show this help
+
+Examples:
+  sudo $SCRIPT_NAME --auto --docker
+  sudo $SCRIPT_NAME --os ubuntu:22.04 --non-interactive --yes --docker --compose
+EOF
+  exit 0
+}
+
+parse_args() {
+  while [ "$#" -gt 0 ]; do
+    case "$1" in
+      --auto)
+        WANTED_OS=auto
+        shift
+        ;;
+      --os)
+        shift
+        WANTED_OS=${1:-}
+        shift
+        ;;
+      --non-interactive)
+        NONINTERACTIVE=true
+        shift
+        ;;
+      --yes)
+        ASSUME_YES=true
+        shift
+        ;;
+      --docker)
+        INSTALL_DOCKER=true
+        shift
+        ;;
+      --compose)
+        INSTALL_COMPOSE=true
+        shift
+        ;;
+      --dry-run)
+        DRY_RUN=true
+        shift
+        ;;
+      -h|--help)
+        usage
+        ;;
+      *)
+        echo "Unknown option: $1"
+        usage
+        ;;
     esac
   done
 }
 
-show_menu() {
-  # Backwards-compatible wrapper; open full panel by default
-  full_panel
+confirm() {
+  local prompt=${1:-"Proceed? (y/N): "}
+  if $NONINTERACTIVE; then
+    $ASSUME_YES && return 0 || return 1
+  fi
+  read -rp "$prompt" ans
+  [[ "$ans" =~ ^[Yy]$ ]]
 }
+
+pause() { read -rp "Press Enter to continue..."; }
+
+ensure_root() {
+  if [ "$EUID" -ne 0 ]; then
+    echo "This script must be run as root. Use sudo ./vps-installer.sh"
+    exit 1
+  fi
+}
+
+run_action() {
+  if $DRY_RUN; then
+    echo "[DRY-RUN] Would run: $*"
+  else
+    "$@"
+  fi
+}
+
+detect_distro() {
+  if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    DISTRO_ID=${ID,,}
+    DISTRO_NAME=${NAME}
+    DISTRO_VER=${VERSION_ID}
+  else
+    DISTRO_ID="unknown"
+    DISTRO_NAME="Unknown"
+    DISTRO_VER=""
+  fi
+}
+
+apt_update_install() {
+  apt-get update -y
+  apt-get upgrade -y
+  apt-get install -y "$@"
+}
+
+dnf_update_install() {
+  dnf -y upgrade --refresh || true
+  dnf -y install "$@"
+}
+
+yum_update_install() {
+  yum -y update || true
+  yum -y install "$@"
+}
+
+apk_update_install() {
+  apk update
+  apk upgrade
+  apk add --no-cache "$@"
+}
+
+pacman_update_install() {
+  pacman -Syu --noconfirm
+  pacman -S --noconfirm "$@"
+}
+
+install_common() {
+  echo "Installing common packages: curl, wget, git, sudo, ca-certificates"
+  case "$DISTRO_ID" in
+    ubuntu|debian)
+      apt_update_install curl wget git sudo ca-certificates gnupg lsb-release
+      ;;
+    centos|rhel|rocky|almalinux)
+      yum_update_install curl wget git sudo ca-certificates
+      ;;
+    fedora)
+      dnf_update_install curl wget git sudo ca-certificates
+      ;;
+    alpine)
+      apk_update_install curl wget git sudo ca-certificates
+      ;;
+    arch)
+      pacman_update_install curl wget git sudo ca-certificates
+      ;;
+    *)
       echo "Unknown distro; attempting generic install with apt-get"
       apt_update_install curl wget git sudo ca-certificates || true
       ;;
@@ -74,17 +178,45 @@ install_swap() {
     read -rp "Create 1G swap file? (y/N): " DO_SWAP
     [[ "$DO_SWAP" =~ ^[Yy]$ ]] && do_swap=true || do_swap=false
   fi
-  if $do_swap; then
-    fallocate -l 1G /swapfile || dd if=/dev/zero of=/swapfile bs=1M count=1024
-    chmod 600 /swapfile
-    mkswap /swapfile
-    swapon /swapfile
+  if ! $do_swap; then
+    echo "Skipping swap creation"
+    return
+  fi
+
+  if [ -f /swapfile ]; then
+    echo "/swapfile already exists"
+    if ! swapon --show=NAME | grep -q "/swapfile"; then
+      echo "Attempting to enable existing /swapfile"
+      chmod 600 /swapfile || true
+      mkswap -f /swapfile || true
+      if swapon /swapfile 2>/dev/null; then
+        echo "/swapfile enabled"
+      else
+        echo "Failed to enable existing /swapfile; skipping"
+      fi
+    else
+      echo "/swapfile already active"
+    fi
+    return
+  fi
+
+  echo "Creating 1G /swapfile"
+  if ! fallocate -l 1G /swapfile 2>/dev/null; then
+    echo "fallocate failed, using dd (slower)"
+    dd if=/dev/zero of=/swapfile bs=1M count=1024 status=progress || dd if=/dev/zero of=/swapfile bs=1M count=1024
+  fi
+  chmod 600 /swapfile
+  if ! mkswap /swapfile 2>/dev/null; then
+    echo "mkswap failed, trying with -f"
+    mkswap -f /swapfile || { echo "mkswap ultimately failed"; return 1; }
+  fi
+  if swapon /swapfile 2>/dev/null; then
     if ! grep -q '/swapfile' /etc/fstab; then
       echo '/swapfile none swap sw 0 0' >> /etc/fstab
     fi
     echo "Swap created and enabled"
   else
-    echo "Skipping swap creation"
+    echo "swapon failed; leaving /swapfile in place for manual inspection"
   fi
 }
 
@@ -393,146 +525,70 @@ generic_install() {
   echo "Generic setup complete"
 }
 
-show_menu() {
-  PS3="Select an option (or 0 to exit): "
-  options=("Select OS & Actions" "Auto-detect and install" "Ubuntu 22.04" "Ubuntu 20.04" "Debian (latest)" "CentOS / RHEL" "AlmaLinux / Rocky" "Fedora" "Alpine" "Arch Linux" "Install LEMP" "Install LAMP" "Apply SSH hardening" "Create sudo user" "Install Docker" "Install Docker Compose" "Install Netdata" "Configure unattended-upgrades" "Run full recommended setup" "Generic" "Exit")
-  select opt in "${options[@]}"; do
+# Debian installer helper
+debian_install() {
+  echo "Running Debian ($DISTRO_VER) preparations"
+  install_common
+  install_swap
+  install_firewall
+  install_fail2ban
+  if $INSTALL_DOCKER; then
+    install_docker
+  fi
+  if $INSTALL_COMPOSE; then
+    install_docker_compose
+  fi
+  echo "Debian setup complete"
+}
+
+# Make the script open one combined OS+action panel when run without flags
+full_panel() {
+  PS3="Choose OS (or 0 to exit): "
+  os_options=("Auto-detect" "Ubuntu 22.04" "Ubuntu 20.04" "Debian" "CentOS/RHEL" "AlmaLinux/Rocky" "Fedora" "Alpine" "Arch" "Exit")
+  select o in "${os_options[@]}"; do
     case $REPLY in
-      1)
-        # First panel: select OS then actions
-        PS3="Choose OS (or 0 to go back): "
-        os_options=("Auto-detect" "Ubuntu 22.04" "Ubuntu 20.04" "Debian" "CentOS/RHEL" "AlmaLinux/Rocky" "Fedora" "Alpine" "Arch" "Back")
-        select o in "${os_options[@]}"; do
-          case $REPLY in
-            1) detect_distro; echo "Detected: $DISTRO_NAME $DISTRO_VER ($DISTRO_ID)"; break ;;
-            2) DISTRO_ID=ubuntu; DISTRO_VER=22.04; break ;;
-            3) DISTRO_ID=ubuntu; DISTRO_VER=20.04; break ;;
-            4) DISTRO_ID=debian; break ;;
-            5) DISTRO_ID=centos; break ;;
-            6) DISTRO_ID=centos; break ;;
-            7) DISTRO_ID=fedora; break ;;
-            8) DISTRO_ID=alpine; break ;;
-            9) DISTRO_ID=arch; break ;;
-            10|0) break ;;
-            *) echo "Invalid" ;;
-          esac
-        done
-        # Actions panel
-        PS3="Choose action (or 0 to finish): "
-        actions=("Install base" "Install LEMP" "Install LAMP" "Apply SSH hardening" "Create sudo user" "Install Docker" "Install Docker Compose" "Install Netdata" "Configure unattended-upgrades" "Run full recommended setup" "Back")
-        select a in "${actions[@]}"; do
-          case $REPLY in
-            1) generic_install; break ;;
-            2) install_lemp; break ;;
-            3) install_lamp; break ;;
-            4) apply_ssh_hardening; break ;;
-            5) create_sudo_user; break ;;
-            6) install_docker; break ;;
-            7) install_docker_compose; break ;;
-            8) install_netdata; break ;;
-            9) configure_unattended_upgrades; break ;;
-            10)
-              install_common; install_swap; install_firewall; install_fail2ban; $INSTALL_DOCKER && install_docker; $INSTALL_COMPOSE && install_docker_compose
-              break ;;
-            11|0) break ;;
-            *) echo "Invalid" ;;
-          esac
-        done
-        break
-        ;;
-      1)
-        detect_distro
-        echo "Detected: $DISTRO_NAME $DISTRO_VER ($DISTRO_ID)"
-        if confirm "Proceed with detected distro's installer? (y/N): "; then
-          case "$DISTRO_ID" in
-            ubuntu)
-              ubuntu_install
-              ;;
-            debian)
-              debian_install
-              ;;
-            centos|rhel|rocky|almalinux)
-              centos_install
-              ;;
-            fedora)
-              dnf_update_install && install_common
-              ;;
-            alpine)
-              alpine_install
-              ;;
-            arch)
-              arch_install
-              ;;
-            *)
-              generic_install
-              ;;
-          esac
-        fi
-        break
-        ;;
-      2)
-        DISTRO_ID=ubuntu; DISTRO_VER=22.04; ubuntu_install; break
-        ;;
-      3)
-        DISTRO_ID=ubuntu; DISTRO_VER=20.04; ubuntu_install; break
-        ;;
-      4)
-        debian_install; break
-        ;;
-      5)
-        centos_install; break
-        ;;
-      6)
-        centos_install; break
-        ;;
-      7)
-        echo "Running Fedora setup"; dnf_update_install && install_common; break
-        ;;
-      8)
-        alpine_install; break
-        ;;
-      9)
-        arch_install; break
-        ;;
+      1) detect_distro; echo "Detected: $DISTRO_NAME $DISTRO_VER ($DISTRO_ID)"; break ;;
+      2) DISTRO_ID=ubuntu; DISTRO_VER=22.04; break ;;
+      3) DISTRO_ID=ubuntu; DISTRO_VER=20.04; break ;;
+      4) DISTRO_ID=debian; break ;;
+      5) DISTRO_ID=centos; break ;;
+      6) DISTRO_ID=centos; break ;;
+      7) DISTRO_ID=fedora; break ;;
+      8) DISTRO_ID=alpine; break ;;
+      9) DISTRO_ID=arch; break ;;
+      10|0) echo "Exiting"; return 0 ;;
+      *) echo "Invalid" ;;
+    esac
+  done
+
+  PS3="Choose action (or 0 to exit): "
+  actions=("Install base" "Install LEMP" "Install LAMP" "Apply SSH hardening" "Create sudo user" "Install Docker" "Install Docker Compose" "Install Netdata" "Configure unattended-upgrades" "Run full recommended setup" "Exit")
+  select a in "${actions[@]}"; do
+    case $REPLY in
+      1) run_action generic_install; break ;;
+      2) run_action install_lemp; break ;;
+      3) run_action install_lamp; break ;;
+      4) run_action apply_ssh_hardening; break ;;
+      5) run_action create_sudo_user; break ;;
+      6) run_action install_docker; break ;;
+      7) run_action install_docker_compose; break ;;
+      8) run_action install_netdata; break ;;
+      9) run_action configure_unattended_upgrades; break ;;
       10)
-        install_lemp; break
-        ;;
-      11)
-        install_lamp; break
-        ;;
-      12)
-        apply_ssh_hardening; break
-        ;;
-      13)
-        create_sudo_user; break
-        ;;
-      14)
-        install_docker; break
-        ;;
-      15)
-        install_docker_compose; break
-        ;;
-      16)
-        install_netdata; break
-        ;;
-      17)
-        configure_unattended_upgrades; break
-        ;;
-      18)
-        install_common; install_swap; install_firewall; install_fail2ban; break
-        ;;
-      10)
-        generic_install; break
-        ;;
-      11|0)
-        echo "Exiting"; break
-        ;;
-      *)
-        echo "Invalid option"
-        ;;
+        run_action bash -c 'install_common; install_swap; install_firewall; install_fail2ban; $INSTALL_DOCKER && install_docker; $INSTALL_COMPOSE && install_docker_compose'
+        break ;;
+      11|0) echo "Exiting"; return 0 ;;
+      *) echo "Invalid" ;;
     esac
   done
 }
+
+show_menu() {
+  # Backwards-compatible wrapper; open full panel by default
+  full_panel
+}
+
+
 
 main() {
   ensure_root
