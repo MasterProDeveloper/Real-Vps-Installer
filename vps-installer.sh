@@ -119,17 +119,28 @@ print_banner() {
     clear
   fi
 
-  local text="MASTERPRODEVELOPER"
+  local lines=(
+    "M     M  AAAAA  SSSSS TTTTT EEEEE RRRR   PPPP  RRRR   OOO  DDDD  EEEEE V   V EEEEE L     OOO  PPPP  EEEEE RRRR"
+    "MM   MM A     A S      T   E     R   R  P   P R   R O   O D   D E     V   V E     L    O   O P   P E     R   R"
+    "M M M M AAAAAAA  SSS   T   EEEE  RRRR   PPPP  RRRR  O   O D   D EEEE  V   V EEEE  L    O   O PPPP  EEEE  RRRR"
+    "M  M  M A     A     S  T   E     R  R   P     R  R  O   O D   D E     V   V E     L    O   O P     E     R  R"
+    "M     M A     A SSSSS  T   EEEEE R   R  P     R   R  OOO  DDDD  EEEEE  VVV  EEEEE LLLLL  OOO  P     EEEEE R   R"
+  )
+
   local colors=("$RED" "$YELLOW" "$GREEN" "$CYAN" "$MAGENTA")
   local color_count=${#colors[@]}
 
-  for ((i=0; i<${#text}; i++)); do
-    local color="${colors[$((i % color_count))]}"
-    printf '%b%s%b' "$color" "${text:i:1}" "$RESET"
-    sleep 0.07
+  for line in "${lines[@]}"; do
+    local line_len=${#line}
+    for ((i=0; i<line_len; i++)); do
+      local color="${colors[$((i % color_count))]}"
+      printf '%b%s%b' "$color" "${line:i:1}" "$RESET"
+      sleep 0.002
+    done
+    echo
   done
-  echo -e "\n"
 
+  echo
   printf '%b\n' "${MAGENTA}${BOLD}Created by MASTERPRODEVELOPER${RESET}"
   printf '%b\n' "${GREEN}Use the panel to choose OS, install base packages, and create a login user.${RESET}"
   echo
@@ -146,14 +157,14 @@ show_loading() {
   local color_count=${#colors[@]}
   local step
 
-  for step in {0..24}; do
+  for step in {0..30}; do
     local anim=""
     for ((i=0; i<${#text}; i++)); do
       local color="${colors[$(((i + step) % color_count))]}"
       anim+="${color}${text:i:1}${RESET}"
     done
     printf '\r%b' "$anim"
-    sleep 0.08
+    sleep 0.06
   done
 
   echo -e "\n${CYAN}Panel ready.${RESET}\n"
