@@ -10,143 +10,52 @@ ASSUME_YES=false
 WANTED_OS=""
 INSTALL_DOCKER=false
 INSTALL_COMPOSE=false
+full_panel() {
+  # Combined OS selection then actions in one flow (opened by default)
+  PS3="Choose OS (or 0 to exit): "
+  os_options=("Auto-detect" "Ubuntu 22.04" "Ubuntu 20.04" "Debian" "CentOS/RHEL" "AlmaLinux/Rocky" "Fedora" "Alpine" "Arch" "Exit")
+  select o in "${os_options[@]}"; do
+    case $REPLY in
+      1) detect_distro; echo "Detected: $DISTRO_NAME $DISTRO_VER ($DISTRO_ID)"; break ;;
+      2) DISTRO_ID=ubuntu; DISTRO_VER=22.04; break ;;
+      3) DISTRO_ID=ubuntu; DISTRO_VER=20.04; break ;;
+      4) DISTRO_ID=debian; break ;;
+      5) DISTRO_ID=centos; break ;;
+      6) DISTRO_ID=centos; break ;;
+      7) DISTRO_ID=fedora; break ;;
+      8) DISTRO_ID=alpine; break ;;
+      9) DISTRO_ID=arch; break ;;
+      10|0) echo "Exiting"; return 0 ;;
+      *) echo "Invalid" ;;
+    esac
+  done
 
-ensure_root() {
-  if [ "$EUID" -ne 0 ]; then
-    echo "This script must be run as root. Use sudo ./vps-installer.sh"
-    exit 1
-  fi
-}
-
-usage() {
-  cat <<EOF
-Usage: $SCRIPT_NAME [options]
-
-Options:
-  --auto                Auto-detect distro and run default setup
-  --os <name[:ver]>     Target OS (ubuntu:22.04, debian, centos, alpine, arch)
-  --non-interactive     Run without prompts (use with --yes to accept defaults)
-  --yes                 Implicit yes to prompts
-  --docker              Install Docker
-  --compose             Install Docker Compose
-  -h, --help            Show this help
-
-Examples:
-  sudo $SCRIPT_NAME --auto --docker
-  sudo $SCRIPT_NAME --os ubuntu:22.04 --non-interactive --yes --docker --compose
-EOF
-  exit 0
-}
-
-parse_args() {
-  while [ "$#" -gt 0 ]; do
-    case "$1" in
-      --auto)
-        WANTED_OS=auto
-        shift
-        ;;
-      --os)
-        shift
-        WANTED_OS=${1:-}
-        shift
-        ;;
-      --non-interactive)
-        NONINTERACTIVE=true
-        shift
-        ;;
-      --yes)
-        ASSUME_YES=true
-        shift
-        ;;
-      --docker)
-        INSTALL_DOCKER=true
-        shift
-        ;;
-      --compose)
-        INSTALL_COMPOSE=true
-        shift
-        ;;
-      -h|--help)
-        usage
-        ;;
-      *)
-        echo "Unknown option: $1"
-        usage
-        ;;
+  PS3="Choose action (or 0 to exit): "
+  actions=("Install base" "Install LEMP" "Install LAMP" "Apply SSH hardening" "Create sudo user" "Install Docker" "Install Docker Compose" "Install Netdata" "Configure unattended-upgrades" "Run full recommended setup" "Exit")
+  select a in "${actions[@]}"; do
+    case $REPLY in
+      1) generic_install; break ;;
+      2) install_lemp; break ;;
+      3) install_lamp; break ;;
+      4) apply_ssh_hardening; break ;;
+      5) create_sudo_user; break ;;
+      6) install_docker; break ;;
+      7) install_docker_compose; break ;;
+      8) install_netdata; break ;;
+      9) configure_unattended_upgrades; break ;;
+      10)
+        install_common; install_swap; install_firewall; install_fail2ban; $INSTALL_DOCKER && install_docker; $INSTALL_COMPOSE && install_docker_compose
+        break ;;
+      11|0) echo "Exiting"; return 0 ;;
+      *) echo "Invalid" ;;
     esac
   done
 }
 
-confirm() {
-  local prompt=${1:-"Proceed? (y/N): "}
-  if $NONINTERACTIVE; then
-    $ASSUME_YES && return 0 || return 1
-  fi
-  read -rp "$prompt" ans
-  [[ "$ans" =~ ^[Yy]$ ]]
+show_menu() {
+  # Backwards-compatible wrapper; open full panel by default
+  full_panel
 }
-
-pause() { read -rp "Press Enter to continue..."; }
-
-detect_distro() {
-  if [ -f /etc/os-release ]; then
-    . /etc/os-release
-    DISTRO_ID=${ID,,}
-    DISTRO_NAME=${NAME}
-    DISTRO_VER=${VERSION_ID}
-  else
-    DISTRO_ID="unknown"
-    DISTRO_NAME="Unknown"
-    DISTRO_VER=""
-  fi
-}
-
-apt_update_install() {
-  apt-get update -y
-  apt-get upgrade -y
-  apt-get install -y "$@"
-}
-
-dnf_update_install() {
-  dnf -y upgrade --refresh || true
-  dnf -y install "$@"
-}
-
-yum_update_install() {
-  yum -y update || true
-  yum -y install "$@"
-}
-
-apk_update_install() {
-  apk update
-  apk upgrade
-  apk add --no-cache "$@"
-}
-
-pacman_update_install() {
-  pacman -Syu --noconfirm
-  pacman -S --noconfirm "$@"
-}
-
-install_common() {
-  echo "Installing common packages: curl, wget, git, sudo, ca-certificates"
-  case "$DISTRO_ID" in
-    ubuntu|debian)
-      apt_update_install curl wget git sudo ca-certificates gnupg lsb-release
-      ;;
-    centos|rhel|rocky|almalinux)
-      yum_update_install curl wget git sudo ca-certificates
-      ;;
-    fedora)
-      dnf_update_install curl wget git sudo ca-certificates
-      ;;
-    alpine)
-      apk_update_install curl wget git sudo ca-certificates
-      ;;
-    arch)
-      pacman_update_install curl wget git sudo ca-certificates
-      ;;
-    *)
       echo "Unknown distro; attempting generic install with apt-get"
       apt_update_install curl wget git sudo ca-certificates || true
       ;;
