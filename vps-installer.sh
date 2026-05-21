@@ -119,21 +119,18 @@ print_banner() {
     clear
   fi
 
-  local lines=(
-    "${CYAN}██████╗ ██╗   ██╗███████╗███████╗ ██████╗ ██╗███████╗███████╗${RESET}"
-    "${CYAN}██╔══██╗██║   ██║██╔════╝██╔════╝██╔════╝ ██║██╔════╝██╔════╝${RESET}"
-    "${GREEN}██████╔╝██║   ██║█████╗  ███████╗██║  ███╗██║█████╗  ███████╗${RESET}"
-    "${GREEN}██╔══██╗██║   ██║██╔══╝  ╚════██║██║   ██║██║██╔══╝  ╚════██║${RESET}"
-    "${YELLOW}██████╔╝╚██████╔╝███████╗███████║╚██████╔╝██║███████╗███████║${RESET}"
-    "${YELLOW}╚═════╝  ╚═════╝ ╚══════╝╚══════╝ ╚═════╝ ╚═╝╚══════╝╚══════╝${RESET}"
-  )
+  local text="MASTERPRODEVELOPER"
+  local colors=("$RED" "$YELLOW" "$GREEN" "$CYAN" "$MAGENTA")
+  local color_count=${#colors[@]}
 
-  for line in "${lines[@]}"; do
-    printf '%b\n' "$line"
-    sleep 0.12
+  for ((i=0; i<${#text}; i++)); do
+    local color="${colors[$((i % color_count))]}"
+    printf '%b%s%b' "$color" "${text:i:1}" "$RESET"
+    sleep 0.07
   done
-  echo
-  printf '%b\n' "${MAGENTA}${BOLD}Created by MasterProDeveloper${RESET}"
+  echo -e "\n"
+
+  printf '%b\n' "${MAGENTA}${BOLD}Created by MASTERPRODEVELOPER${RESET}"
   printf '%b\n' "${GREEN}Use the panel to choose OS, install base packages, and create a login user.${RESET}"
   echo
 }
@@ -143,13 +140,22 @@ show_loading() {
     clear
   fi
   echo -e "${CYAN}${BOLD}Loading VPS installer panel...${RESET}"
-  local progress
-  for progress in {1..20}; do
-    local dots
-    dots=$(printf '%0.s.' $(seq 1 $progress))
-    printf '\r%b[%s] %s' "$YELLOW" "$dots" "${GREEN}Please wait...${RESET}"
-    sleep 0.12
+
+  local text="MASTERPRODEVELOPER"
+  local colors=("$RED" "$YELLOW" "$GREEN" "$CYAN" "$MAGENTA")
+  local color_count=${#colors[@]}
+  local step
+
+  for step in {0..24}; do
+    local anim=""
+    for ((i=0; i<${#text}; i++)); do
+      local color="${colors[$(((i + step) % color_count))]}"
+      anim+="${color}${text:i:1}${RESET}"
+    done
+    printf '\r%b' "$anim"
+    sleep 0.08
   done
+
   echo -e "\n${CYAN}Panel ready.${RESET}\n"
 }
 
@@ -700,7 +706,6 @@ full_panel() {
 }
 
 show_menu() {
-  print_banner
   full_panel
 }
 
