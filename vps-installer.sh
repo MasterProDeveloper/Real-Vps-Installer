@@ -614,13 +614,13 @@ main() {
     fi
 
     case "$DISTRO_ID" in
-      ubuntu) ubuntu_install ;;
-      debian) debian_install ;;
-      centos) centos_install ;;
-      alpine) alpine_install ;;
-      arch) arch_install ;;
-      fedora) dnf_update_install && install_common ;;
-      *) generic_install ;;
+      ubuntu) run_action ubuntu_install ;;
+      debian) run_action debian_install ;;
+      centos) run_action centos_install ;;
+      alpine) run_action alpine_install ;;
+      arch) run_action arch_install ;;
+      fedora) run_action bash -c 'dnf_update_install && install_common' ;;
+      *) run_action generic_install ;;
     esac
   else
     show_menu
