@@ -510,6 +510,22 @@ centos_install() {
   echo "CentOS/RHEL setup complete"
 }
 
+fedora_install() {
+  echo "Running Fedora preparations"
+  dnf_update_install
+  install_common
+  install_swap
+  install_firewall
+  install_fail2ban
+  if $INSTALL_DOCKER; then
+    install_docker
+  fi
+  if $INSTALL_COMPOSE; then
+    install_docker_compose
+  fi
+  echo "Fedora setup complete"
+}
+
 alpine_install() {
   echo "Running Alpine preparations"
   install_common
@@ -716,7 +732,7 @@ main() {
         run_action arch_install
         ;;
       fedora)
-        run_action bash -c 'dnf_update_install && install_common'
+        run_action fedora_install
         ;;
       *)
         run_action generic_install
