@@ -12,6 +12,15 @@ INSTALL_DOCKER=false
 INSTALL_COMPOSE=false
 DRY_RUN=false
 
+# ANSI colors for panel styling
+RESET="\033[0m"
+BOLD="\033[1m"
+CYAN="\033[1;36m"
+YELLOW="\033[1;33m"
+GREEN="\033[1;32m"
+MAGENTA="\033[1;35m"
+RED="\033[1;31m"
+
 usage() {
   cat <<EOF
 Usage: $SCRIPT_NAME [options]
@@ -101,6 +110,30 @@ run_action() {
   else
     "$@"
   fi
+}
+
+print_banner() {
+  local banner_lines=(
+    "${CYAN}██████╗ ██╗   ██╗███████╗███████╗ ██████╗ ██╗███████╗███████╗${RESET}"
+    "${CYAN}██╔══██╗██║   ██║██╔════╝██╔════╝██╔════╝ ██║██╔════╝██╔════╝${RESET}"
+    "${GREEN}██████╔╝██║   ██║█████╗  ███████╗██║  ███╗██║█████╗  ███████╗${RESET}"
+    "${GREEN}██╔══██╗██║   ██║██╔══╝  ╚════██║██║   ██║██║██╔══╝  ╚════██║${RESET}"
+    "${YELLOW}██████╔╝╚██████╔╝███████╗███████║╚██████╔╝██║███████╗███████║${RESET}"
+    "${YELLOW}╚═════╝  ╚═════╝ ╚══════╝╚══════╝ ╚═════╝ ╚═╝╚══════╝╚══════╝${RESET}"
+  )
+
+  if [ -t 1 ]; then
+    clear
+  fi
+
+  for line in "${banner_lines[@]}"; do
+    printf '%b\n' "$line"
+    sleep 0.04
+  done
+  echo
+  printf '%b\n' "${MAGENTA}${BOLD}Created by MasterProDeveloper${RESET}"
+  printf '%b\n' "${GREEN}Simple Panel · Choose OS · Install base · Add user${RESET}"
+  echo
 }
 
 detect_distro() {
@@ -527,6 +560,27 @@ generic_install() {
   echo "Generic setup complete"
 }
 
+install_full_recommended() {
+  echo "Running full recommended install for $DISTRO_NAME $DISTRO_VER ($DISTRO_ID)"
+  install_common
+  install_swap
+  install_firewall
+  install_fail2ban
+  if $INSTALL_DOCKER; then
+    install_docker
+  fi
+  if $INSTALL_COMPOSE; then
+    install_docker_compose
+  fi
+  echo "Full install complete. Next step: create sudo user."
+  create_sudo_user
+}
+
+install_full_with_user() {
+  echo "Starting full install and user creation for $DISTRO_NAME $DISTRO_VER ($DISTRO_ID)"
+  install_full_recommended
+}
+
 # Debian installer helper
 debian_install() {
   echo "Running Debian ($DISTRO_VER) preparations"
@@ -564,7 +618,7 @@ full_panel() {
   done
 
   PS3="Choose action (or 0 to exit): "
-  actions=("Install base" "Install LEMP" "Install LAMP" "Apply SSH hardening" "Create sudo user" "Install Docker" "Install Docker Compose" "Install Netdata" "Configure unattended-upgrades" "Run full recommended setup" "Exit")
+  actions=("Install base" "Install LEMP" "Install LAMP" "Apply SSH hardening" "Create sudo user" "Install Docker" "Install Docker Compose" "Install Netdata" "Configure unattended-upgrades" "Install full setup + add user" "Exit")
   select a in "${actions[@]}"; do
     case $REPLY in
       1) run_action generic_install; break ;;
@@ -576,9 +630,7 @@ full_panel() {
       7) run_action install_docker_compose; break ;;
       8) run_action install_netdata; break ;;
       9) run_action configure_unattended_upgrades; break ;;
-      10)
-        run_action bash -c 'install_common; install_swap; install_firewall; install_fail2ban; $INSTALL_DOCKER && install_docker; $INSTALL_COMPOSE && install_docker_compose'
-        break ;;
+      10) run_action install_full_with_user; break ;;
       11|0) echo "Exiting"; return 0 ;;
       *) echo "Invalid" ;;
     esac
