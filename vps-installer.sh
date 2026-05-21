@@ -130,12 +130,45 @@ print_banner() {
 
   for line in "${lines[@]}"; do
     printf '%b\n' "$line"
-    sleep 0.03
+    sleep 0.12
   done
   echo
   printf '%b\n' "${MAGENTA}${BOLD}Created by MasterProDeveloper${RESET}"
   printf '%b\n' "${GREEN}Use the panel to choose OS, install base packages, and create a login user.${RESET}"
   echo
+}
+
+show_loading() {
+  if [ -t 1 ]; then
+    clear
+  fi
+  echo -e "${CYAN}${BOLD}Loading VPS installer panel...${RESET}"
+  local progress
+  for progress in {1..20}; do
+    local dots
+    dots=$(printf '%0.s.' $(seq 1 $progress))
+    printf '\r%b[%s] %s' "$YELLOW" "$dots" "${GREEN}Please wait...${RESET}"
+    sleep 0.12
+  done
+  echo -e "\n${CYAN}Panel ready.${RESET}\n"
+}
+
+prompt_menu() {
+  local prompt="$1"
+  shift
+  local options=("$@")
+  local i choice
+  while true; do
+    for i in "${!options[@]}"; do
+      local index=$((i + 1))
+      printf '%b%2s)%b %b%s%b\n' "$YELLOW" "$index" "$RESET" "$CYAN" "${options[i]}" "$RESET"
+    done
+    read -rp "${MAGENTA}${prompt}${RESET} " choice
+    if [[ "$choice" =~ ^[0-9]+$ ]] && [ "$choice" -ge 1 ] && [ "$choice" -le ${#options[@]} ]; then
+      return $((choice - 1))
+    fi
+    echo -e "${RED}Invalid option, try again.${RESET}"
+  done
 }
 
 detect_distro() {
@@ -580,112 +613,90 @@ install_full_with_user() {
 }
 
 full_panel() {
-  PS3="Choose OS (or 0 to exit): "
-  os_options=("Auto-detect" "Ubuntu 22.04" "Ubuntu 20.04" "Debian" "CentOS/RHEL" "AlmaLinux/Rocky" "Fedora" "Alpine" "Arch" "Exit")
-  select o in "${os_options[@]}"; do
-    case $REPLY in
-      1)
-        detect_distro
-        echo "Detected: $DISTRO_NAME $DISTRO_VER ($DISTRO_ID)"
-        break
-        ;;
-      2)
-        DISTRO_ID=ubuntu
-        DISTRO_VER=22.04
-        break
-        ;;
-      3)
-        DISTRO_ID=ubuntu
-        DISTRO_VER=20.04
-        break
-        ;;
-      4)
-        DISTRO_ID=debian
-        break
-        ;;
-      5)
-        DISTRO_ID=centos
-        break
-        ;;
-      6)
-        DISTRO_ID=centos
-        break
-        ;;
-      7)
-        DISTRO_ID=fedora
-        break
-        ;;
-      8)
-        DISTRO_ID=alpine
-        break
-        ;;
-      9)
-        DISTRO_ID=arch
-        break
-        ;;
-      10|0)
-        echo "Exiting"
-        return 0
-        ;;
-      *)
-        echo "Invalid"
-        ;;
-    esac
-  done
+  show_loading
+  print_banner
 
-  PS3="Choose action (or 0 to exit): "
-  actions=("Install base" "Install LEMP" "Install LAMP" "Apply SSH hardening" "Create sudo user" "Install Docker" "Install Docker Compose" "Install Netdata" "Configure unattended-upgrades" "Install full setup + add user" "Exit")
-  select a in "${actions[@]}"; do
-    case $REPLY in
-      1)
-        run_action generic_install
-        break
-        ;;
-      2)
-        run_action install_lemp
-        break
-        ;;
-      3)
-        run_action install_lamp
-        break
-        ;;
-      4)
-        run_action apply_ssh_hardening
-        break
-        ;;
-      5)
-        run_action create_sudo_user
-        break
-        ;;
-      6)
-        run_action install_docker
-        break
-        ;;
-      7)
-        run_action install_docker_compose
-        break
-        ;;
-      8)
-        run_action install_netdata
-        break
-        ;;
-      9)
-        run_action configure_unattended_upgrades
-        break
-        ;;
-      10)
-        run_action install_full_with_user
-        break
-        ;;
-      11|0)
-        echo "Exiting"
-        return 0
-        ;;
-      *)
-        echo "Invalid"
-        ;;
-    esac
-  done
+  local os_options=("Auto-detect" "Ubuntu 22.04" "Ubuntu 20.04" "Debian" "CentOS/RHEL" "AlmaLinux/Rocky" "Fedora" "Alpine" "Arch" "Exit")
+  prompt_menu "Choose OS (enter number):" "${os_options[@]}"
+  local os_choice=$?
+
+  case $os_choice in
+    0)
+      detect_distro
+      echo -e "${GREEN}Detected: $DISTRO_NAME $DISTRO_VER ($DISTRO_ID)${RESET}"
+      ;;
+    1)
+      DISTRO_ID=ubuntu
+      DISTRO_VER=22.04
+      ;;
+    2)
+      DISTRO_ID=ubuntu
+      DISTRO_VER=20.04
+      ;;
+    3)
+      DISTRO_ID=debian
+      ;;
+    4)
+      DISTRO_ID=centos
+      ;;
+    5)
+      DISTRO_ID=centos
+      ;;
+    6)
+      DISTRO_ID=fedora
+      ;;
+    7)
+      DISTRO_ID=alpine
+      ;;
+    8)
+      DISTRO_ID=arch
+      ;;
+    9)
+      echo -e "${YELLOW}Goodbye.${RESET}"
+      return 0
+      ;;
+  esac
+
+  local actions=("Install base" "Install LEMP" "Install LAMP" "Apply SSH hardening" "Create sudo user" "Install Docker" "Install Docker Compose" "Install Netdata" "Configure unattended-upgrades" "Install full setup + add user" "Exit")
+  prompt_menu "Choose action (enter number):" "${actions[@]}"
+  local action_choice=$?
+
+  case $action_choice in
+    0)
+      run_action generic_install
+      ;;
+    1)
+      run_action install_lemp
+      ;;
+    2)
+      run_action install_lamp
+      ;;
+    3)
+      run_action apply_ssh_hardening
+      ;;
+    4)
+      run_action create_sudo_user
+      ;;
+    5)
+      run_action install_docker
+      ;;
+    6)
+      run_action install_docker_compose
+      ;;
+    7)
+      run_action install_netdata
+      ;;
+    8)
+      run_action configure_unattended_upgrades
+      ;;
+    9)
+      run_action install_full_with_user
+      ;;
+    10)
+      echo -e "${YELLOW}Goodbye.${RESET}"
+      return 0
+      ;;
+  esac
 }
 
 show_menu() {
