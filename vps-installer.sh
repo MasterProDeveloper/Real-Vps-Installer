@@ -23,11 +23,13 @@ Options:
   --yes                 Implicit yes to prompts
   --docker              Install Docker
   --compose             Install Docker Compose
+  --dry-run             Show what would run without making changes
   -h, --help            Show this help
 
 Examples:
   sudo $SCRIPT_NAME --auto --docker
   sudo $SCRIPT_NAME --os ubuntu:22.04 --non-interactive --yes --docker --compose
+  sudo $SCRIPT_NAME --dry-run
 EOF
   exit 0
 }
