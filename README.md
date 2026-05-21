@@ -2,7 +2,8 @@
 
 **Simple interactive VPS setup for Ubuntu, Debian, CentOS/RHEL, AlmaLinux/Rocky, Fedora, Alpine, and Arch.**
 
-This repo gives you a clean menu-driven installer. Run one command and choose the OS + action you want. It installs base tools, security hardening, Docker, LEMP/LAMP, Netdata, and can add a login user after install.
+This repository gives you a clean, menu-driven installer for a fresh VPS image.
+Run one command, choose your OS, and select the setup steps you want.
 
 ## Quick start
 
@@ -13,7 +14,7 @@ chmod +x vps-installer.sh vpsinstaller
 sudo ./vpsinstaller
 ```
 
-If you want to install directly from raw GitHub content:
+## Run from GitHub raw content
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/MasterProDeveloper/Real-Vps-Installer/main/vps-installer.sh | sudo bash
@@ -21,42 +22,46 @@ curl -fsSL https://raw.githubusercontent.com/MasterProDeveloper/Real-Vps-Install
 
 ## What it does
 
-- Shows a colorful animated menu banner
-- Lets you choose a target OS
-- Installs common packages, firewall, swap, fail2ban
-- Installs Docker and Docker Compose when selected
-- Installs LEMP or LAMP stack
-- Adds SSH hardening to `/etc/ssh/sshd_config`
-- Lets you create a sudo user with password or SSH key
-- Provides a full install action that installs and then creates a user
+- Shows a colorful animated panel with a big heading
+- Lets you pick OS and install actions
+- Installs common packages, firewall, swap, fail2ban, and security tools
+- Supports Docker and Docker Compose
+- Installs LEMP or LAMP stacks
+- Adds SSH hardening from `templates/sshd_hardening.conf`
+- Lets you create a new sudo user after install
+- Includes a full-install action that installs packages and then prompts for a login user
 
 ## How to use
 
-Run the installer with:
+Run the installer and follow the menu:
 
 ```bash
 sudo ./vps-installer.sh
 ```
 
-The panel will ask:
+Then use the panel to:
 
-1. Choose OS or auto-detect
+1. Choose an OS or auto-detect
 2. Choose an install action
-3. Follow prompts to create a user or secure SSH
+3. Create a user if you want a login account
 
-## One-command install
-
-For a non-interactive install with Docker and Compose:
+## Example commands
 
 ```bash
 sudo ./vps-installer.sh --auto --non-interactive --yes --docker --compose
-```
-
-To see what would happen without making changes:
-
-```bash
 sudo ./vps-installer.sh --dry-run
+sudo ./vpsinstaller
 ```
+
+## Special action
+
+Choose **Install full setup + add user** to:
+
+- install base tools and security stack
+- optionally install Docker/Compose
+- then prompt for username and password or SSH key
+
+This gives you a working login user after install.
 
 ## Supported OS
 
@@ -68,35 +73,17 @@ sudo ./vps-installer.sh --dry-run
 - Alpine Linux
 - Arch Linux
 
-## Recommended action
-
-Choose `Install full setup + add user` to:
-
-- install the base system and security tools
-- install Docker/Compose when requested
-- immediately prompt for username and password or SSH key
-
-This gives you a ready-to-use login user after the install.
-
 ## Notes
 
-- This script is meant for an existing VPS or VM instance. It does not create a cloud VPS by itself.
-- Use it on a fresh server image for best results.
-- Keep one SSH session open while applying SSH hardening.
-- Read the script if you want to customize package selection.
-
-## Useful commands
-
-```bash
-sudo ./vps-installer.sh --auto --non-interactive --yes --docker --compose
-sudo ./vps-installer.sh --dry-run
-sudo ./vpsinstaller
-```
+- Use this on an existing VPS or VM instance. It does not create a cloud VPS.
+- Best on a fresh server image.
+- Keep a second SSH session open when applying SSH hardening.
+- If you use the wrapper, run `sudo ./vpsinstaller`.
 
 ## Files
 
-- `vps-installer.sh` — main interactive installer
-- `vpsinstaller` — simple wrapper command
+- `vps-installer.sh` — main installer script
+- `vpsinstaller` — shortcut wrapper to run the installer
 - `templates/sshd_hardening.conf` — SSH hardening fragment
 - `templates/SSH_HARDENING.md` — notes about SSH hardening
 
