@@ -13,13 +13,13 @@ INSTALL_COMPOSE=false
 DRY_RUN=false
 
 # ANSI colors for panel styling
-RESET="[0m"
-BOLD="[1m"
-CYAN="[1;36m"
-YELLOW="[1;33m"
-GREEN="[1;32m"
-MAGENTA="[1;35m"
-RED="[1;31m"
+RESET="\033[0m"
+BOLD="\033[1m"
+CYAN="\033[1;36m"
+YELLOW="\033[1;33m"
+GREEN="\033[1;32m"
+MAGENTA="\033[1;35m"
+RED="\033[1;31m"
 
 usage() {
   cat <<EOF
@@ -129,15 +129,12 @@ print_banner() {
   )
 
   for line in "${lines[@]}"; do
-    printf '%b
-' "$line"
+    printf '%b\n' "$line"
     sleep 0.03
   done
   echo
-  printf '%b
-' "${MAGENTA}${BOLD}Created by MasterProDeveloper${RESET}"
-  printf '%b
-' "${GREEN}Use the panel to choose OS, install base packages, and create a login user.${RESET}"
+  printf '%b\n' "${MAGENTA}${BOLD}Created by MasterProDeveloper${RESET}"
+  printf '%b\n' "${GREEN}Use the panel to choose OS, install base packages, and create a login user.${RESET}"
   echo
 }
 
@@ -309,9 +306,7 @@ apply_ssh_hardening() {
   echo "Backing up /etc/ssh/sshd_config to /etc/ssh/sshd_config.bak"
   cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak || true
   echo "Appending hardening fragment. Keep an active session when applying."
-  printf "
-# SSH hardening fragment - appended by vps-installer
-" >> /etc/ssh/sshd_config
+  printf "\n# SSH hardening fragment - appended by vps-installer\n" >> /etc/ssh/sshd_config
   cat "$conf_src" >> /etc/ssh/sshd_config
   if systemctl restart sshd 2>/dev/null; then
     echo "sshd restarted"
