@@ -147,24 +147,32 @@ print_banner() {
 }
 
 show_loading() {
-  if [ -t 1 ]; then
-    clear
-  fi
-  echo -e "${CYAN}${BOLD}Loading VPS installer panel...${RESET}"
+  local lines=(
+    "M     M  AAAAA  SSSSS TTTTT EEEEE RRRR   PPPP  RRRR   OOO  DDDD  EEEEE V   V EEEEE L     OOO  PPPP  EEEEE RRRR"
+    "MM   MM A     A S      T   E     R   R  P   P R   R O   O D   D E     V   V E     L    O   O P   P E     R   R"
+    "M M M M AAAAAAA  SSS   T   EEEE  RRRR   PPPP  RRRR  O   O D   D EEEE  V   V EEEE  L    O   O PPPP  EEEE  RRRR"
+    "M  M  M A     A     S  T   E     R  R   P     R  R  O   O D   D E     V   V E     L    O   O P     E     R  R"
+    "M     M A     A SSSSS  T   EEEEE R   R  P     R   R  OOO  DDDD  EEEEE  VVV  EEEEE LLLLL  OOO  P     EEEEE R   R"
+  )
 
-  local text="MASTERPRODEVELOPER"
   local colors=("$RED" "$YELLOW" "$GREEN" "$CYAN" "$MAGENTA")
   local color_count=${#colors[@]}
   local step
 
-  for step in {0..30}; do
-    local anim=""
-    for ((i=0; i<${#text}; i++)); do
-      local color="${colors[$(((i + step) % color_count))]}"
-      anim+="${color}${text:i:1}${RESET}"
+  for step in {0..10}; do
+    if [ -t 1 ]; then
+      clear
+    fi
+    echo -e "${CYAN}${BOLD}Loading VPS installer panel...${RESET}\n"
+    for line in "${lines[@]}"; do
+      local line_len=${#line}
+      for ((i=0; i<line_len; i++)); do
+        local color="${colors[$(((i + step) % color_count))]}"
+        printf '%b%s%b' "$color" "${line:i:1}" "$RESET"
+      done
+      echo
     done
-    printf '\r%b' "$anim"
-    sleep 0.06
+    sleep 0.10
   done
 
   echo -e "\n${CYAN}Panel ready.${RESET}\n"
