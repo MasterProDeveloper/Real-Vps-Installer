@@ -1,92 +1,221 @@
-# Real VPS Installer
+<div align="center">
 
-**Simple interactive VPS setup for Ubuntu, Debian, CentOS/RHEL, AlmaLinux/Rocky, Fedora, Alpine, and Arch.**
+# 🚀 Real VPS Installer
 
-This repository gives you a clean, menu-driven installer for a fresh VPS image.
-Run one command, choose your OS, and select the setup steps you want.
+### ⚡ Powerful • Interactive • Multi-OS VPS Setup Tool
 
-## Quick start
+<p align="center">
+A premium all-in-one VPS installer with a clean interactive menu, security setup, Docker support, web stacks, and automation tools.
+</p>
+
+<p align="center">
+
+![Platform](https://img.shields.io/badge/Platform-Linux-blue)
+![Shell](https://img.shields.io/badge/Bash-Script-green)
+![Status](https://img.shields.io/badge/Status-Active-success)
+![License](https://img.shields.io/badge/License-MIT-yellow)
+![Version](https://img.shields.io/badge/Installer-Real%20VPS-red)
+
+</p>
+
+</div>
+
+---
+
+# ✨ Features
+
+🔥 Beautiful colorful interface with animated startup panel  
+⚡ One-command installation process  
+🖥️ Supports many Linux distributions  
+🔐 Security setup and SSH hardening  
+🐳 Docker + Docker Compose support  
+🌐 LAMP and LEMP web stack installer  
+🛡️ Firewall and Fail2Ban protection  
+💾 Automatic swap setup  
+👤 Create a new sudo user after installation  
+🚀 Full setup mode with automation support  
+📦 Install common VPS tools instantly  
+
+---
+
+# 🖥️ Supported Operating Systems
+
+✅ Ubuntu 20.04 / 22.04  
+✅ Debian  
+✅ CentOS / RHEL  
+✅ AlmaLinux  
+✅ Rocky Linux  
+✅ Fedora  
+✅ Alpine Linux  
+✅ Arch Linux  
+
+---
+
+# ⚡ Quick Start
+
+Clone the repository and run the installer:
 
 ```bash
 git clone https://github.com/MasterProDeveloper/Real-Vps-Installer.git
+
 cd Real-Vps-Installer
+
 chmod +x vps-installer.sh vpsinstaller
+
 sudo ./vpsinstaller
 ```
 
-## Run from GitHub raw content
+---
+
+# 🌐 Run Directly From GitHub
+
+No need to clone manually.
+
+Run:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/MasterProDeveloper/Real-Vps-Installer/main/vps-installer.sh | sudo bash
 ```
 
-## What it does
+---
 
-- Shows a colorful animated panel with a big heading
-- Lets you pick OS and install actions
-- Installs common packages, firewall, swap, fail2ban, and security tools
-- Supports Docker and Docker Compose
-- Installs LEMP or LAMP stacks
-- Adds SSH hardening from `templates/sshd_hardening.conf`
-- Lets you create a new sudo user after install
-- Includes a full-install action that installs packages and then prompts for a login user
+# 🔥 How It Works
 
-## How to use
-
-Run the installer and follow the menu:
+Run the installer:
 
 ```bash
 sudo ./vps-installer.sh
 ```
 
-Then use the panel to:
+Then simply follow the menu:
 
-1. Choose an OS or auto-detect
-2. Choose an install action
-3. Create a user if you want a login account
+### Step 1
+Choose your operating system  
+or allow automatic detection
 
-## Example commands
+### Step 2
+Select installation actions
+
+Examples:
+
+- Install Docker
+- Install Docker Compose
+- Setup firewall
+- Install security tools
+- Install LAMP
+- Install LEMP
+- Configure SSH
+
+### Step 3
+
+Create a new user account if needed
+
+Done ✅
+
+---
+
+# 🚀 Example Commands
+
+Automatic installation:
 
 ```bash
 sudo ./vps-installer.sh --auto --non-interactive --yes --docker --compose
+```
+
+Dry run mode:
+
+```bash
 sudo ./vps-installer.sh --dry-run
+```
+
+Run shortcut wrapper:
+
+```bash
 sudo ./vpsinstaller
 ```
 
-## Special action
+---
 
-Choose **Install full setup + add user** to:
+# ⭐ Full Setup Mode
 
-- install base tools and security stack
-- optionally install Docker/Compose
-- then prompt for username and password or SSH key
+Choose:
 
-This gives you a working login user after install.
+**Install Full Setup + Add User**
 
-## Supported OS
+This option will:
 
-- Ubuntu 22.04, Ubuntu 20.04
-- Debian latest
-- CentOS / RHEL
-- AlmaLinux / Rocky Linux
-- Fedora
-- Alpine Linux
-- Arch Linux
+✅ Install essential packages  
+✅ Install security tools  
+✅ Configure firewall  
+✅ Configure SSH hardening  
+✅ Install Docker and Compose (optional)  
+✅ Create a new sudo user  
+✅ Setup login access  
 
-## Notes
+Perfect for fresh VPS servers.
 
-- Use this on an existing VPS or VM instance. It does not create a cloud VPS.
-- Best on a fresh server image.
-- Keep a second SSH session open when applying SSH hardening.
-- If you use the wrapper, run `sudo ./vpsinstaller`.
+---
 
-## Files
+# 📁 Project Structure
 
-- `vps-installer.sh` — main installer script
-- `vpsinstaller` — shortcut wrapper to run the installer
-- `templates/sshd_hardening.conf` — SSH hardening fragment
-- `templates/SSH_HARDENING.md` — notes about SSH hardening
+```bash
+Real-Vps-Installer/
+│
+├── vps-installer.sh
+├── vpsinstaller
+│
+└── templates/
+    ├── sshd_hardening.conf
+    └── SSH_HARDENING.md
+```
 
-## License
+---
+
+# 📄 Important Notes
+
+⚠️ Use on a fresh VPS for best results
+
+⚠️ Keep another SSH session open before applying SSH changes
+
+⚠️ This project configures an existing VPS
+
+⚠️ It does NOT create cloud VPS instances
+
+---
+
+# 🛠 Included Components
+
+- Docker
+- Docker Compose
+- Firewall tools
+- Fail2Ban
+- Swap configuration
+- Security packages
+- SSH hardening
+- LAMP stack
+- LEMP stack
+- User management
+
+---
+
+<div align="center">
+
+# ⭐ Support The Project
+
+If this project helped you, consider giving it a star.
+
+🚀 Your support helps improve the project.
+
+</div>
+
+---
+
+<div align="center">
+
+# 📜 License
 
 MIT License
+
+Made with ❤️ by MasterProDeveloper
+
+</div>
